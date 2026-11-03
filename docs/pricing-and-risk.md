@@ -1,18 +1,15 @@
-# Pricing, Overround und Bookmaker-Risiko
+# Pricing, Overround, and Bookmaker Risk
 
-## 1. Worum es in diesem Modell geht
+## 1. What this model represents
 
-Bookie ist kein Vorhersageautomat. Die Engine bildet einen kleinen
-Fixed-Odds-Bookmaker ab:
+Bookie is not a prediction oracle. It models a small fixed-odds bookmaker:
 
-1. Sie beginnt mit fairen Wahrscheinlichkeiten.
-2. Sie berechnet daraus angebotene Quoten mit Overround.
-3. Sie speichert Einsätze und die daraus entstehende Liability.
-4. Sie berechnet den Bookie-PnL für jedes mögliche Ergebnis.
-5. Sie nimmt eine neue Wette nur an, wenn der konfigurierte Risk Floor nicht
-   unterschritten wird.
-6. Nach dem tatsächlichen oder simulierten Ergebnis wird der Book
-   deterministisch abgerechnet.
+1. Start with fair probabilities.
+2. Turn them into offered odds with an overround.
+3. Track accepted stakes and the resulting liability.
+4. Calculate bookmaker PnL for every possible outcome.
+5. Accept a new bet only if it does not breach the configured risk floor.
+6. Settle the book deterministically after an actual or simulated result.
 
 ```mermaid
 flowchart LR
@@ -25,285 +22,279 @@ flowchart LR
     A --> S[Settle realized outcome]
 ```
 
-Alle Geldbegriffe in dieser Dokumentation bezeichnen ausschließlich fiktive
-Spielpunkte.
+All monetary terms in this document refer exclusively to fictional play
+points.
 
-## 2. Begriffe
+## 2. Terminology
 
-| Begriff | Bedeutung im Projekt |
+| Term | Meaning in this project |
 | --- | --- |
-| Faire Wahrscheinlichkeit \(p_i\) | Modellierte Wahrscheinlichkeit des Outcomes \(i\) vor Marge |
-| Faire Quote | \(1/p_i\) |
-| Implied Probability \(q_i\) | Aus der angebotenen Quote abgeleitete Wahrscheinlichkeit \(1/O_i\) |
-| Angebotene Quote \(O_i\) | Beim Abschluss festgeschriebene Dezimalquote |
-| Einsatz | Vom Spieler riskierte Punkte |
-| Auszahlung | Bei Gewinn: Einsatz mal Quote, einschließlich Rückgabe des Einsatzes |
-| Liability | Nettoverpflichtung des Bookies bei Gewinn der Wette: Einsatz mal \((O_i-1)\) |
-| PnL | Nettogewinn oder -verlust; Spieler- und Bookie-PnL sind gegensätzlich |
-| Risk Floor | Kleinster erlaubter Bookie-PnL über alle Outcomes nach einer neuen Wette |
+| Fair probability \(p_i\) | Modeled probability of outcome \(i\) before margin |
+| Fair odds | \(1/p_i\) |
+| Implied probability \(q_i\) | Probability recovered from offered odds: \(1/O_i\) |
+| Offered odds \(O_i\) | Decimal odds locked in when a bet is accepted |
+| Stake | Points risked by the player |
+| Payout | On a win: stake multiplied by odds, including the returned stake |
+| Liability | Bookmaker's net obligation on a winning bet: stake multiplied by \((O_i-1)\) |
+| PnL | Net profit or loss; player and bookmaker PnL are opposites |
+| Risk floor | Lowest allowed bookmaker PnL across all outcomes after a new bet |
 
-## 3. Von fairen Wahrscheinlichkeiten zum Overround
+## 3. From fair probabilities to overround
 
-Die fairen Wahrscheinlichkeiten werden zunächst auf eins normiert:
+Fair probabilities are first normalized to one:
 
 $$
 \sum_i p_i = 1.
 $$
 
-Bei einer proportional verteilten Marge \(m\) verwendet die Engine:
+For a proportionally distributed margin \(m\), the engine calculates:
 
 $$
 q_i = (1+m)p_i
 $$
 
-und wandelt diese Werte in Dezimalquoten um:
+and converts these values to decimal odds:
 
 $$
 O_i = \frac{1}{q_i} = \frac{1}{(1+m)p_i}.
 $$
 
-Der Overround ist die Summe der aus den angebotenen Quoten abgeleiteten
-Wahrscheinlichkeiten:
+The overround is the sum of the probabilities implied by the offered odds:
 
 $$
 \Omega = \sum_i \frac{1}{O_i} = \sum_i q_i = 1+m.
 $$
 
-Bei \(m=5\%\) ergibt sich also ein Overround von \(105\%\). Die angebotenen
-Quoten sind niedriger als die fairen Quoten.
+With \(m=5\%\), the overround is \(105\%\). Offered odds are therefore lower
+than fair odds.
 
-### Beispiel: Verbleib oder Wechsel
+### Example: stay or leave
 
-Angenommen, die fairen Wahrscheinlichkeiten lauten:
+Assume the fair probabilities are:
 
-- Verbleib: \(p_V=60\%\)
-- Wechsel: \(p_W=40\%\)
-- proportionale Marge: \(m=5\%\)
+- Stay: \(p_S=60\%\)
+- Leave: \(p_L=40\%\)
+- Proportional margin: \(m=5\%\)
 
-| Outcome | Fair \(p_i\) | Faire Quote \(1/p_i\) | Implied \(q_i\) | Angebotene Quote \(1/q_i\) |
+| Outcome | Fair \(p_i\) | Fair odds \(1/p_i\) | Implied \(q_i\) | Offered odds \(1/q_i\) |
 | --- | ---: | ---: | ---: | ---: |
-| Verbleib | 60,00 % | 1,6667 | 63,00 % | 1,5873 |
-| Wechsel | 40,00 % | 2,5000 | 42,00 % | 2,3810 |
-| **Summe** | **100,00 %** | — | **105,00 %** | — |
+| Stay | 60.00% | 1.6667 | 63.00% | 1.5873 |
+| Leave | 40.00% | 2.5000 | 42.00% | 2.3810 |
+| **Total** | **100.00%** | — | **105.00%** | — |
 
-Die Streamlit-Grafik „Fair vs. Offered“ visualisiert genau diesen Unterschied.
+The Streamlit chart named “Fair vs. Offered” visualizes this difference.
 
-### Implementierungsdetail: Mindestquote
+### Implementation detail: minimum odds
 
-`probs_to_odds()` begrenzt Quoten standardmäßig auf mindestens `1.01`. Bei
-extremen Wahrscheinlichkeiten kann dieses Clamping dazu führen, dass der aus
-den finalen Quoten zurückgerechnete Overround nicht mehr exakt \(1+m\) ist.
-Im normalen Wertebereich des Career-Demos greift diese Grenze nicht.
+`probs_to_odds()` clamps odds to at least `1.01` by default. At extreme
+probabilities, this can cause the overround recovered from final odds to differ
+from exactly \(1+m\). The clamp does not activate within the normal range of
+the career demo.
 
-## 4. Overround ist nicht dasselbe wie realisierter Gewinn
+## 4. Overround is not realized profit
 
-Ein Overround von 105 % bedeutet nicht, dass der Bookie sicher 5 % verdient.
-Unter den vereinfachenden Annahmen dieses Modells gilt für einen einzelnen
-Einsatz \(s\):
+An overround of 105% does not mean that the bookmaker is guaranteed to earn
+5%. Under the simplifying assumptions of this model, a single stake \(s\) has
+the following expected bookmaker PnL:
 
 $$
-E[\mathrm{PnL}_{Bookie}]
+E[\mathrm{PnL}_{Bookmaker}]
 =s\left(1-p_iO_i\right)
 =s\left(1-\frac{1}{1+m}\right)
 =s\frac{m}{1+m}.
 $$
 
-Bei \(m=5\%\) entspricht das:
+For \(m=5\%\), this is:
 
 $$
-\frac{0{,}05}{1{,}05}=4{,}7619\%.
+\frac{0.05}{1.05}=4.7619\%.
 $$
 
-Der theoretische erwartete Bookie-Ertrag beträgt unter diesen Annahmen also
-rund 4,76 % des Einsatzes, nicht 5 %. Der korrespondierende theoretische
-Spieler-Return ist:
+Under these assumptions, the theoretical expected bookmaker return is about
+4.76% of the stake, not 5%. The corresponding theoretical player return is:
 
 $$
-\mathrm{RTP}=\frac{1}{1+m}=95{,}2381\%.
+\mathrm{RTP}=\frac{1}{1+m}=95.2381\%.
 $$
 
-Diese Rechnung setzt insbesondere voraus:
+This calculation assumes that:
 
-- die fairen Wahrscheinlichkeiten sind korrekt kalibriert,
-- die angebotene Quote entsteht durch die proportionale Skalierung oben,
-- es gibt keine Rundungs- oder Mindestquoteneffekte,
-- es werden keine korrelierten oder voneinander abhängigen Märkte vermischt.
+- fair probabilities are correctly calibrated;
+- offered odds use the proportional scaling above;
+- rounding and minimum-odds effects do not apply;
+- correlated or dependent markets are not combined.
 
-Der **realisierte** Gewinn kann bei einem einzelnen Markt deutlich positiv
-oder negativ sein. Der Erwartungswert ist eine Aussage über viele vergleichbare
-Wiederholungen, nicht über das nächste konkrete Outcome.
+The **realized** profit on one market may be strongly positive or negative.
+Expected value describes many comparable repetitions, not the next individual
+outcome.
 
-## 5. Warum Buchmacher keine Hellseher sein müssen
+## 5. Why bookmakers do not need to predict the future
 
-Die zentrale Aussage lautet:
+The central idea is:
 
-> Der Bookie muss nicht wissen, welches Outcome als Nächstes eintritt. Er muss
-> die Verteilung hinreichend gut bepreisen und sicherstellen, dass er jedes
-> mögliche Outcome finanziell überstehen kann.
+> The bookmaker does not need to know which outcome will happen next. It needs
+> to price the distribution well enough and ensure that it can financially
+> survive every possible outcome.
 
-Das funktioniert in diesem Modell über vier getrennte Mechanismen.
+This model uses four separate mechanisms to achieve that goal.
 
-### 5.1 Wahrscheinlichkeiten statt Gewissheit
+### 5.1 Probabilities instead of certainty
 
-Eine faire Wahrscheinlichkeit von 60 % bedeutet nicht „Verbleib wird
-eintreten“. Sie bedeutet: In einer großen Menge hinreichend vergleichbarer
-Situationen sollte dieses Outcome ungefähr in 60 % der Fälle auftreten. Eine
-einzelne Realisierung kann jederzeit das 40-%-Outcome sein.
+A fair probability of 60% does not mean “stay will happen.” It means that the
+outcome should occur in roughly 60% of a large set of sufficiently comparable
+cases. Any individual realization can still be the 40% outcome.
 
-### 5.2 Preisvorteil durch Overround
+### 5.2 A pricing edge from overround
 
-Wenn die Wahrscheinlichkeiten kalibriert sind, verschiebt der Overround den
-Erwartungswert zugunsten des Bookies. Er macht aus Unsicherheit einen positiven
-mathematischen Erwartungswert — aber noch keinen garantierten Gewinn.
+When probabilities are calibrated, overround moves expected value in favor of
+the bookmaker. It turns uncertainty into positive mathematical expectation,
+but not guaranteed profit.
 
-### 5.3 Outcome-conditioned PnL statt bloßer Prognose
+### 5.3 Outcome-conditioned PnL instead of a single forecast
 
-`RiskBook.worst_case_pnl()` berechnet vor dem Settlement den PnL für **jedes**
-mögliche Outcome:
+Before settlement, `RiskBook.worst_case_pnl()` calculates PnL for **every**
+possible outcome:
 
 $$
 \mathrm{PnL}(i)
-=\text{Einsätze auf verlierende Outcomes}
--\text{Liability auf Outcome }i.
+=\text{stakes on losing outcomes}
+-\text{liability on outcome }i.
 $$
 
-Der Bookie sieht damit nicht nur, was er für wahrscheinlich hält, sondern was
-in jedem Szenario finanziell passiert.
+The bookmaker therefore sees not only what it considers likely, but also what
+happens financially in every scenario.
 
-### 5.4 Annahme oder Ablehnung als Risikopolitik
+### 5.4 Acceptance and rejection as risk policy
 
-`check_bet()` kopiert den aktuellen Book, fügt die Kandidatenwette nur in der
-Kopie hinzu und berechnet die neue PnL-Oberfläche. Es gilt:
+`check_bet()` copies the current book, adds the candidate bet only to that
+copy, and calculates the new PnL surface. The rule is:
 
 $$
 \text{accept}
 \iff
-\min_i \mathrm{PnL}_{nach\ Wette}(i)
-\geq \text{Risk Floor}.
+\min_i \mathrm{PnL}_{after\ bet}(i)
+\geq \text{risk floor}.
 $$
 
-Eine Wette kann also trotz attraktiver Marge abgelehnt werden, wenn sie den
-Book in einem Outcome zu stark belastet. Genau deshalb ist Risikosteuerung
-nicht dasselbe wie Ergebnisvorhersage.
+A bet may therefore be rejected despite an attractive margin if it creates too
+much exposure in one outcome. That is why risk management is different from
+outcome prediction.
 
-## 6. Durchgerechnetes Book-Beispiel
+## 6. Worked book example
 
-Wir verwenden die Quoten aus dem 60/40-Beispiel und einen Risk Floor von
-`-20` Punkten.
+Use the odds from the 60/40 example and a risk floor of `-20` points.
 
-### Erste Wette
+### First bet
 
-- 25 Punkte auf Verbleib zu Quote 1,5873
-- Liability bei Verbleib: \(25(1{,}5873-1)=14{,}68\)
+- 25 points on stay at odds of 1.5873
+- Liability if stay occurs: \(25(1.5873-1)=14.68\)
 
-| Szenario | Bookie-PnL |
+| Scenario | Bookmaker PnL |
 | --- | ---: |
-| Verbleib | -14,68 |
-| Wechsel | +25,00 |
+| Stay | -14.68 |
+| Leave | +25.00 |
 
-Der Bookie muss Verbleib nicht ausschließen. Er muss lediglich entscheiden, ob
-der mögliche Verlust von 14,68 Punkten innerhalb seines Risk Floors liegt.
+The bookmaker does not need to rule out stay. It only needs to decide whether
+the possible loss of 14.68 points fits within its risk floor.
 
-### Zweite Wette
+### Second bet
 
-Nun kommen zusätzlich 25 Punkte auf Wechsel zu Quote 2,3810 hinzu.
+Add 25 points on leave at odds of 2.3810.
 
-| Szenario | Rechnung | Bookie-PnL |
+| Scenario | Calculation | Bookmaker PnL |
 | --- | --- | ---: |
-| Verbleib | 25,00 verlierender Wechsel-Einsatz minus 14,68 Liability | +10,32 |
-| Wechsel | 25,00 verlierender Verbleib-Einsatz minus 34,52 Liability | -9,52 |
+| Stay | 25.00 losing leave stake minus 14.68 liability | +10.32 |
+| Leave | 25.00 losing stay stake minus 34.52 liability | -9.52 |
 
-Der Worst Case verbessert sich auf rund `-9,52` Punkte. Der
-wahrscheinlichkeitsgewichtete erwartete PnL des gesamten Books beträgt:
+The worst case improves to about `-9.52` points. The probability-weighted
+expected PnL of the complete book is:
 
 $$
-0{,}60(10{,}32)+0{,}40(-9{,}52)\approx 2{,}38.
+0.60(10.32)+0.40(-9.52)\approx 2.38.
 $$
 
-Der Book ist nicht in jedem Outcome profitabel, aber sein erwarteter PnL ist
-positiv und sein möglicher Verlust bleibt innerhalb des gewählten Limits.
+The book is not profitable in every outcome, but expected PnL is positive and
+the possible loss remains inside the selected limit.
 
-### Sequenzabhängigkeit der aktuellen Policy
+### Sequence dependence of the current policy
 
-Mit einem strengeren Risk Floor von `-10` Punkten würde die **erste** Wette
-abgelehnt, weil ihr Worst Case `-14,68` beträgt. Die spätere Gegenwette könnte
-den Book zwar ausbalancieren, ist bei der ersten Entscheidung aber noch nicht
-bekannt. Die aktuelle Policy ist deshalb bewusst sequenziell und konservativ.
-Ein späterer Ausbau könnte reservierte Liquidität, Hedge-Aufträge oder
-Exposure-aware Requoting modellieren.
+With a stricter risk floor of `-10` points, the **first** bet would be rejected
+because its worst case is `-14.68`. A later opposing bet could balance the
+book, but it is not known when the first decision is made. The current policy
+is therefore intentionally sequential and conservative. A future extension
+could model reserved liquidity, hedge orders, or exposure-aware requoting.
 
-## 7. Was die Dashboard-Ansichten bedeuten
+## 7. Reading the dashboard
 
-| Ansicht | Interpretation |
+| View | Interpretation |
 | --- | --- |
-| Fair vs. Offered | Preisabschlag durch den proportionalen Overround |
-| Net Liability | Nettoverpflichtung, falls das jeweilige Outcome gewinnt |
-| Outcome-conditioned PnL | Bookie-Ergebnis für jede mögliche Realisierung |
-| Risk-Floor-Linie | Untergrenze, die eine neue Wette nicht verletzen darf |
-| Exposure-Verteilung | Verteilung der angenommenen Einsätze auf die Outcomes |
-| Expected Bookie PnL | Mit fairen Wahrscheinlichkeiten gewichteter Szenario-PnL |
-| Acceptance/Rejection Feed | Sequenz der geprüften Wettanfragen und Entscheidungen |
+| Fair vs. Offered | Price reduction caused by proportional overround |
+| Net Liability | Net obligation if the respective outcome wins |
+| Outcome-conditioned PnL | Bookmaker result for each possible realization |
+| Risk-floor line | Lower bound that a new bet may not breach |
+| Exposure distribution | Distribution of accepted stakes across outcomes |
+| Expected bookmaker PnL | Scenario PnL weighted by fair probabilities |
+| Acceptance/rejection feed | Sequence of evaluated requests and decisions |
 
-Die Ansichten werden nach jeder manuellen oder simulierten Wettanfrage aus
-demselben `RiskBook` neu berechnet. Sie sind verschiedene Perspektiven auf
-denselben Zustand, keine voneinander unabhängigen Kennzahlen.
+Every view is recalculated from the same `RiskBook` after each manual or
+simulated request. They are different perspectives on one shared state, not
+independent metrics.
 
-## 8. Häufige Missverständnisse
+## 8. Common misconceptions
 
-### „105 % Overround bedeutet 5 % sicheren Gewinn.“
+### “A 105% overround means 5% guaranteed profit.”
 
-Nein. Overround ist zunächst eine Eigenschaft der angebotenen Quoten. Gewinn
-entsteht nur unter Modellannahmen und über realisierte Einsätze und Outcomes.
+No. Overround is initially a property of offered odds. Profit depends on model
+assumptions, realized stakes, and realized outcomes.
 
-### „Der Bookie muss häufiger richtig liegen als die Spieler.“
+### “The bookmaker must predict more winners than the players.”
 
-Nicht zwingend. Der Bookie verkauft Quoten und steuert Liability. Entscheidend
-sind Preisqualität, Marge, Einsatzverteilung und Risikolimits — nicht eine
-Serie binärer Tipps.
+Not necessarily. The bookmaker sells odds and manages liability. Pricing
+quality, margin, stake distribution, and risk limits matter more than a series
+of binary predictions.
 
-### „Liability ist die gesamte Auszahlung.“
+### “Liability is the total payout.”
 
-Nein. In dieser Engine ist Liability die Nettoverpflichtung
-`stake * (odds - 1)`. Die Bruttoauszahlung an den Gewinner ist `stake * odds`.
+No. In this engine, liability is the net obligation `stake * (odds - 1)`. The
+gross payout to a winning player is `stake * odds`.
 
-### „Expected PnL ist der PnL, der eintreten wird.“
+### “Expected PnL is the PnL that will occur.”
 
-Nein. Expected PnL ist ein wahrscheinlichkeitsgewichteter Mittelwert. Nach dem
-Settlement tritt genau einer der outcome-conditioned PnL-Werte ein.
+No. Expected PnL is a probability-weighted average. After settlement, exactly
+one of the outcome-conditioned PnL values is realized.
 
-### „Der Risk Floor verhindert jeden Verlust.“
+### “The risk floor prevents every loss.”
 
-Nur ein Risk Floor von mindestens null würde negative Szenario-PnLs im
-modellierten Markt ausschließen. Ein negativer Floor erlaubt bewusst begrenzte
-Verluste. Außerdem schützt er nicht vor falschen Modellannahmen oder Risiken,
-die im Marktmodell fehlen.
+Only a risk floor of at least zero excludes negative scenario PnL within the
+modeled market. A negative floor deliberately permits bounded losses. It also
+cannot protect against incorrect model assumptions or omitted risks.
 
-## 9. Grenzen des aktuellen Modells
+## 9. Current model limitations
 
-- Die fairen Wahrscheinlichkeiten werden von außen vorgegeben.
-- Es gibt noch kein Kapital- oder Bankroll-Konto über mehrere Märkte.
-- Märkte und Matches sind nicht korreliert.
-- Es gibt keine dynamische Requotierung anhand des aktuellen Exposures.
-- Die Streamlit-Demo hält ihren Zustand nur im Arbeitsspeicher.
-- Es gibt keine echten Konten, Zahlungen oder Echtgeldwetten.
+- Fair probabilities are supplied externally.
+- There is no capital or bankroll account across markets.
+- Markets and matches are not correlated.
+- Prices are not dynamically updated from current exposure.
+- The Streamlit demo stores state only in memory.
+- There are no real accounts, payments, or real-money bets.
 
-Diese Grenzen sind wichtig: Overround und Risk Floor ersetzen weder ein gutes
-Wahrscheinlichkeitsmodell noch Kapitalmanagement. Sie machen aber transparent,
-warum ein Bookmaker-System auch ohne sichere Kenntnis des nächsten Outcomes
-systematisch arbeiten kann.
+These limitations matter. Overround and a risk floor do not replace a good
+probability model or capital management. They do make it transparent why a
+bookmaker system can operate systematically without certain knowledge of the
+next outcome.
 
-## 10. Zuordnung zum Code
+## 10. Mapping concepts to code
 
-| Konzept | Implementierung |
+| Concept | Implementation |
 | --- | --- |
-| Overround und Quoten | `src/bookie/engine/pricing.py` |
-| Stakes, Liability und Szenario-PnL | `src/bookie/engine/risk.py` |
-| Acceptance Policy | `src/bookie/engine/accept.py` |
-| Realisiertes Settlement | `src/bookie/engine/settlement.py` |
-| Career-Markt und Expected PnL | `src/bookie/career.py` |
-| Plotly-Visualisierungen | `src/bookie/dashboard.py` |
-| Interaktive Demo | `src/bookie/web.py` |
+| Overround and odds | `src/bookie/engine/pricing.py` |
+| Stakes, liability, and scenario PnL | `src/bookie/engine/risk.py` |
+| Acceptance policy | `src/bookie/engine/accept.py` |
+| Realized settlement | `src/bookie/engine/settlement.py` |
+| Career market and expected PnL | `src/bookie/career.py` |
+| Plotly visualizations | `src/bookie/dashboard.py` |
+| Interactive demo | `src/bookie/web.py` |
 
-Der mathematische Kern bleibt unabhängig von Streamlit und Plotly. Die UI liest
-seinen Zustand und visualisiert ihn; sie definiert keine eigenen Pricing- oder
-Risk-Regeln.
+The mathematical core remains independent of Streamlit and Plotly. The UI
+reads and visualizes engine state; it does not define separate pricing or risk
+rules.

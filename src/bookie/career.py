@@ -10,8 +10,8 @@ from bookie.engine.types import Bet, Outcome
 
 CAREER_OUTCOMES = (Outcome.HOME, Outcome.AWAY)
 CAREER_LABELS = {
-    Outcome.HOME: "Verbleib in der Firma",
-    Outcome.AWAY: "Wechsel aus der Firma",
+    Outcome.HOME: "Stay at current company",
+    Outcome.AWAY: "Leave current company",
 }
 CAREER_MARKET_ID = "career-stay-or-leave"
 
@@ -101,13 +101,13 @@ def settlement_rows(
         bookie_pnl = bookie_pnl_by_id[bet.bet_id]
         rows.append(
             {
-                "Wette": bet.bet_id,
+                "Bet": bet.bet_id,
                 "Position": CAREER_LABELS[bet.outcome],
-                "Einsatz": bet.stake,
-                "Quote": bet.odds,
-                "Auszahlung": bet.stake * bet.odds if won else 0.0,
-                "Spieler-PnL": -bookie_pnl,
-                "Bookie-PnL": bookie_pnl,
+                "Stake": bet.stake,
+                "Odds": bet.odds,
+                "Payout": bet.stake * bet.odds if won else 0.0,
+                "Player PnL": -bookie_pnl,
+                "Bookmaker PnL": bookie_pnl,
             }
         )
     return total, rows

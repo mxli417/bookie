@@ -39,7 +39,7 @@ def pricing_figure(
         data=[
             go.Bar(name="Fair Odds", x=labels, y=fair_odds, marker_color=BLUE),
             go.Bar(
-                name="Angebotene Odds",
+                name="Offered Odds",
                 x=labels,
                 y=[offered_odds[outcome] for outcome in CAREER_OUTCOMES],
                 marker_color=GREEN,
@@ -63,8 +63,8 @@ def liability_figure(book: RiskBook) -> go.Figure:
             textposition="auto",
         )
     )
-    figure.update_yaxes(title_text="Punkte")
-    return _style(figure, "Net Liability nach Outcome")
+    figure.update_yaxes(title_text="Points")
+    return _style(figure, "Net Liability by Outcome")
 
 
 def pnl_figure(book: RiskBook, risk_floor: float) -> go.Figure:
@@ -76,7 +76,7 @@ def pnl_figure(book: RiskBook, risk_floor: float) -> go.Figure:
             x=[CAREER_LABELS[outcome] for outcome in CAREER_OUTCOMES],
             y=values,
             marker_color=[GREEN if value >= 0 else RED for value in values],
-            name="Bookie-PnL",
+            name="Bookmaker PnL",
             text=[f"{value:.2f}" for value in values],
             textposition="auto",
         )
@@ -88,8 +88,8 @@ def pnl_figure(book: RiskBook, risk_floor: float) -> go.Figure:
         annotation_text=f"Risk Floor {risk_floor:.0f}",
         annotation_position="bottom right",
     )
-    figure.update_yaxes(title_text="PnL in Punkten")
-    return _style(figure, "Outcome-conditioned Bookie PnL")
+    figure.update_yaxes(title_text="PnL in points")
+    return _style(figure, "Outcome-conditioned Bookmaker PnL")
 
 
 def exposure_figure(book: RiskBook) -> go.Figure | None:
@@ -105,9 +105,9 @@ def exposure_figure(book: RiskBook) -> go.Figure | None:
             marker=dict(colors=[BLUE, AMBER]),
             textinfo="label+percent",
             hovertemplate=(
-                "%{label}<br>%{value:.2f} Punkte<br>%{percent}<extra></extra>"
+                "%{label}<br>%{value:.2f} points<br>%{percent}<extra></extra>"
             ),
         )
     )
     figure.update_layout(showlegend=False)
-    return _style(figure, "Exposure-Verteilung nach Einsatz")
+    return _style(figure, "Stake Exposure Distribution")

@@ -22,45 +22,45 @@ def test_streamlit_happy_path_accepts_and_settles_bet():
 
     assert not app.exception
     assert app.title[0].value == "Career Market Lab"
-    assert _metric_value(app, "Angenommene Wetten") == "0"
-    assert _metric_value(app, "Einsatzvolumen") == "0.00 Punkte"
+    assert _metric_value(app, "Accepted bets") == "0"
+    assert _metric_value(app, "Stake volume") == "0.00 points"
 
-    _button(app, "Wette anfragen").click().run(timeout=10)
+    _button(app, "Submit bet request").click().run(timeout=10)
 
     assert not app.exception
-    assert _metric_value(app, "Angenommene Wetten") == "1"
-    assert _metric_value(app, "Einsatzvolumen") == "25.00 Punkte"
-    assert _metric_value(app, "Erwarteter Bookie-PnL") == "1.19 Punkte"
-    assert _metric_value(app, "Worst-Case-PnL") == "-14.68 Punkte"
-    assert app.success[0].value.startswith("M001 angenommen")
+    assert _metric_value(app, "Accepted bets") == "1"
+    assert _metric_value(app, "Stake volume") == "25.00 points"
+    assert _metric_value(app, "Expected bookmaker PnL") == "1.19 points"
+    assert _metric_value(app, "Worst-case PnL") == "-14.68 points"
+    assert app.success[0].value.startswith("M001 accepted")
 
-    _button(app, "Outcome simulieren").click().run(timeout=10)
+    _button(app, "Simulate outcome").click().run(timeout=10)
 
     assert not app.exception
     metric_labels = [metric.label for metric in app.metric]
-    assert "Bookie-PnL" in metric_labels
-    assert "Spieler-PnL" in metric_labels
-    assert "Spielerauszahlung" in metric_labels
+    assert "Bookmaker PnL" in metric_labels
+    assert "Player PnL" in metric_labels
+    assert "Player payout" in metric_labels
 
 
 def test_streamlit_shows_risk_rejection():
     app = AppTest.from_file(WEB_APP).run(timeout=10)
-    _number_input(app, "Minimaler Worst-Case-PnL").set_value(0.0)
+    _number_input(app, "Minimum worst-case PnL").set_value(0.0)
 
-    _button(app, "Wette anfragen").click().run(timeout=10)
+    _button(app, "Submit bet request").click().run(timeout=10)
 
     assert not app.exception
-    assert _metric_value(app, "Angenommene Wetten") == "0"
-    assert _metric_value(app, "Abgelehnte Wetten") == "1"
-    assert app.error[0].value.startswith("M001 abgelehnt: RISK_LIMIT")
+    assert _metric_value(app, "Accepted bets") == "0"
+    assert _metric_value(app, "Rejected bets") == "1"
+    assert app.error[0].value.startswith("M001 rejected: RISK_LIMIT")
 
 
 def test_streamlit_simulated_request_updates_dashboard():
     app = AppTest.from_file(WEB_APP).run(timeout=10)
 
-    _button(app, "Nächste Wettanfrage simulieren").click().run(timeout=10)
+    _button(app, "Simulate next bet request").click().run(timeout=10)
 
     assert not app.exception
-    assert _metric_value(app, "Angenommene Wetten") == "1"
-    assert _metric_value(app, "Einsatzvolumen") != "0.00 Punkte"
-    assert app.success[0].value.startswith("S001 simuliert und angenommen")
+    assert _metric_value(app, "Accepted bets") == "1"
+    assert _metric_value(app, "Stake volume") != "0.00 points"
+    assert app.success[0].value.startswith("S001 simulated and accepted")

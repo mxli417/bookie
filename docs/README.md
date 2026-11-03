@@ -1,26 +1,25 @@
-# Bookie-Dokumentation
+# Bookie Documentation
 
-Diese Dokumentation erklärt den fachlichen Kern des Projekts unabhängig von
-der Streamlit-Oberfläche. Alle Beträge sind fiktive Spielpunkte.
+This documentation explains the project's domain model independently of the
+Streamlit interface. All monetary values are fictional play points.
 
-## Einstieg
+## Start here
 
-1. [Pricing, Overround und Bookmaker-Risiko](pricing-and-risk.md)
-   erklärt den Weg von fairen Wahrscheinlichkeiten zu angebotenen Quoten,
-   grenzt Overround von realisiertem Gewinn ab und beschreibt die
-   Acceptance Policy.
-2. Die [README](../README.md) enthält Installation, Startbefehle,
-   Projektstruktur und Roadmap.
-3. Die ausführbaren Beispiele liegen in `src/bookie/sim/runner.py` und in der
-   lokalen Streamlit-Anwendung `src/bookie/web.py`.
+1. [Pricing, overround, and bookmaker risk](pricing-and-risk.md) explains the
+   path from fair probabilities to offered odds, distinguishes overround from
+   realized profit, and documents the bet acceptance policy.
+2. The project [README](../README.md) covers installation, commands,
+   architecture, and the roadmap.
+3. Executable examples are available in `src/bookie/sim/runner.py` and the
+   local Streamlit application in `src/bookie/web.py`.
 
-## Leitgedanke
+## Core idea
 
-> Ein Buchmacher muss das nächste Ergebnis nicht kennen. Er muss die
-> Wahrscheinlichkeitsverteilung vernünftig bepreisen und einen Book führen,
-> dessen mögliche Verluste seine Risikotragfähigkeit nicht überschreiten.
+> A bookmaker does not need to know the next outcome. It needs to price the
+> probability distribution reasonably well and maintain a book whose possible
+> losses do not exceed its risk capacity.
 
-Das ist keine Garantie für Gewinn. Fehlerhafte Wahrscheinlichkeiten,
-einseitiger Order Flow, Korrelationen und seltene Extremereignisse bleiben
-reale Risiken. Genau diese Trennung zwischen Prognose und Risikosteuerung soll
-der kleine Engine-Kern sichtbar machen.
+That is not a guarantee of profit. Miscalibrated probabilities, one-sided
+order flow, correlations, and rare extreme events remain real risks. The small
+engine is designed to make this distinction between prediction and risk
+management explicit.

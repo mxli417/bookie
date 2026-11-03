@@ -21,10 +21,10 @@ The engine functions themselves stay deliberately small and deterministic.
 ## Documentation
 
 - [Documentation index](docs/README.md)
-- [Pricing, overround and bookmaker risk](docs/pricing-and-risk.md) — a
-  German-language explanation of the mathematics, the engine flow and why a
-  bookmaker manages probability distributions rather than predicting the next
-  outcome with certainty
+- [Pricing, overround and bookmaker risk](docs/pricing-and-risk.md) — the
+  mathematics, engine flow, and an explanation of why a bookmaker manages
+  probability distributions rather than predicting the next outcome with
+  certainty
 
 ## Architecture
 

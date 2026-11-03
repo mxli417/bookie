@@ -22,7 +22,7 @@ def test_pricing_figure_compares_fair_and_offered_odds():
     probabilities = career_probabilities(0.6)
     figure = pricing_figure(probabilities, career_odds(0.6, 0.05))
 
-    assert [trace.name for trace in figure.data] == ["Fair Odds", "Angebotene Odds"]
+    assert [trace.name for trace in figure.data] == ["Fair Odds", "Offered Odds"]
     assert list(figure.data[0].y) == pytest.approx([1 / 0.6, 1 / 0.4])
 
 

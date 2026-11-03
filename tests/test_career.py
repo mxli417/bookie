@@ -87,8 +87,6 @@ def test_settlement_rows_show_player_and_bookie_as_opposites():
     bookie_total, rows = settlement_rows(bets, Outcome.HOME)
 
     assert bookie_total == pytest.approx(-5.0)
-    assert rows[0]["Auszahlung"] == pytest.approx(20.0)
-    assert rows[1]["Auszahlung"] == 0.0
-    assert sum(float(row["Spieler-PnL"]) for row in rows) == pytest.approx(
-        -bookie_total
-    )
+    assert rows[0]["Payout"] == pytest.approx(20.0)
+    assert rows[1]["Payout"] == 0.0
+    assert sum(float(row["Player PnL"]) for row in rows) == pytest.approx(-bookie_total)
