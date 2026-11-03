@@ -64,6 +64,8 @@ def _process_bet(bet: Bet, risk_floor: float) -> bool:
             "Outcome": CAREER_LABELS[bet.outcome],
             "Stake": bet.stake,
             "Odds": round(bet.odds, 2),
+            "Projected worst case": round(decision.projected_worst_case_pnl, 2),
+            "Risk floor": round(decision.risk_floor, 2),
             "Reason": decision.reason,
         },
     )
@@ -224,6 +226,19 @@ def main() -> None:
             )
 
     st.subheader("Live Bookmaker Position")
+    with st.expander("How to read PnL", expanded=True):
+        st.markdown(
+            "**PnL means profit and loss from the bookmaker's perspective.**\n\n"
+            "- A **positive** PnL is bookmaker profit; a **negative** PnL is "
+            "bookmaker loss.\n"
+            "- **Expected bookmaker PnL** is the probability-weighted average "
+            "before settlement. It is an estimate, not a guaranteed profit.\n"
+            "- **Outcome PnL** is what the bookmaker realizes if that specific "
+            "outcome occurs.\n"
+            "- **Worst-case PnL** is the lowest outcome PnL currently in the "
+            "book. A new bet is accepted only when its projected worst case "
+            "stays at or above the risk floor."
+        )
     pnl = st.session_state.book.worst_case_pnl()
     summary = summarize_book(
         st.session_state.book, st.session_state.bets, probabilities
@@ -249,6 +264,24 @@ def main() -> None:
         ),
     )
     summary_columns[4].metric("Worst-case PnL", _money(summary.worst_case_pnl))
+
+    if not summary.total_stakes:
+        st.info("Expected bookmaker edge appears after the first accepted bet.")
+    elif summary.expected_pnl > 0:
+        st.success(
+            "POSITIVE EXPECTED BOOKMAKER EDGE: "
+            f"+{_money(summary.expected_pnl)} "
+            f"({summary.expected_roi:.1%} of accepted stakes). "
+            "This is an expectation, not realized profit."
+        )
+    elif summary.expected_pnl < 0:
+        st.error(
+            "NEGATIVE EXPECTED BOOKMAKER EDGE: "
+            f"{_money(summary.expected_pnl)} "
+            f"({summary.expected_roi:.1%} of accepted stakes)."
+        )
+    else:
+        st.warning("Expected bookmaker PnL is currently break-even at 0.00 points.")
 
     st.markdown("**Bookmaker PnL by possible outcome**")
     outcome_columns = st.columns(2)
@@ -321,9 +354,15 @@ def main() -> None:
     if st.session_state.result is not None:
         result = st.session_state.result
         bookie_total, rows = settlement_rows(st.session_state.bets, result)
-        st.success(f"Simulated result: {CAREER_LABELS[result]}")
+        st.info(f"Simulated result: {CAREER_LABELS[result]}")
+        if bookie_total > 0:
+            st.success(f"BOOKMAKER PROFIT: +{_money(bookie_total)}")
+        elif bookie_total < 0:
+            st.error(f"BOOKMAKER LOSS: {_money(bookie_total)}")
+        else:
+            st.warning("BOOKMAKER RESULT: break-even at 0.00 points")
         settlement_columns = st.columns(3)
-        settlement_columns[0].metric("Bookmaker PnL", _money(bookie_total))
+        settlement_columns[0].metric("Realized bookmaker PnL", _money(bookie_total))
         settlement_columns[1].metric("Player PnL", _money(-bookie_total))
         settlement_columns[2].metric(
             "Player payout",

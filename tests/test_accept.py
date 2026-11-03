@@ -18,7 +18,11 @@ def test_check_bet_accepts_at_exact_risk_floor_without_mutating_book(
     decision = check_bet(empty_book, bet, min_worst_case_pnl=-10.0)
 
     assert decision.accepted is True
-    assert decision.reason == "OK"
+    assert decision.reason == (
+        "Projected worst-case PnL -10.00 meets risk floor -10.00."
+    )
+    assert decision.projected_worst_case_pnl == pytest.approx(-10.0)
+    assert decision.risk_floor == pytest.approx(-10.0)
     assert sum(empty_book.stakes.values()) == 0.0
     assert sum(empty_book.liability.values()) == 0.0
 
@@ -31,7 +35,11 @@ def test_check_bet_rejects_when_new_worst_case_breaches_floor(
     decision = check_bet(empty_book, bet, min_worst_case_pnl=-9.99)
 
     assert decision.accepted is False
-    assert decision.reason == "RISK_LIMIT: worst_case=-10.00"
+    assert decision.reason == (
+        "Projected worst-case PnL -10.00 breaches risk floor -9.99."
+    )
+    assert decision.projected_worst_case_pnl == pytest.approx(-10.0)
+    assert decision.risk_floor == pytest.approx(-9.99)
     assert sum(empty_book.stakes.values()) == 0.0
 
 

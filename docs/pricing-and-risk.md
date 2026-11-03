@@ -180,6 +180,10 @@ A bet may therefore be rejected despite an attractive margin if it creates too
 much exposure in one outcome. That is why risk management is different from
 outcome prediction.
 
+Each `AcceptDecision` records the projected worst-case PnL and the applicable
+risk floor. Its reason explains whether the projection meets or breaches that
+floor; the interface does not use an unexplained generic success status.
+
 ## 6. Worked book example
 
 Use the odds from the 60/40 example and a risk floor of `-20` points.
@@ -235,6 +239,11 @@ could model reserved liquidity, hedge orders, or exposure-aware requoting.
 | Exposure distribution | Distribution of accepted stakes across outcomes |
 | Expected bookmaker PnL | Scenario PnL weighted by fair probabilities |
 | Acceptance/rejection feed | Sequence of evaluated requests and decisions |
+
+PnL is always shown from the bookmaker's perspective: positive values are
+bookmaker profit and negative values are bookmaker loss. Before settlement,
+the highlighted value is an expectation. After settlement, the interface
+separately highlights the realized bookmaker result.
 
 Every view is recalculated from the same `RiskBook` after each manual or
 simulated request. They are different perspectives on one shared state, not

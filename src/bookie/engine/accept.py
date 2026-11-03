@@ -16,6 +16,8 @@ from bookie.engine.types import Bet
 class AcceptDecision:
     accepted: bool
     reason: str
+    projected_worst_case_pnl: float
+    risk_floor: float
 
 
 def check_bet(book: RiskBook, bet: Bet, min_worst_case_pnl: float) -> AcceptDecision:
@@ -23,8 +25,23 @@ def check_bet(book: RiskBook, bet: Bet, min_worst_case_pnl: float) -> AcceptDeci
     tmp = RiskBook(stakes=dict(book.stakes), liability=dict(book.liability))
     tmp.add_bet(bet)
     worstcase = tmp.worst_case_pnl()
-    if min(worstcase.values()) < min_worst_case_pnl:
+    projected_worst_case = min(worstcase.values())
+    if projected_worst_case < min_worst_case_pnl:
         return AcceptDecision(
-            False, f"RISK_LIMIT: worst_case={min(worstcase.values()):.2f}"
+            accepted=False,
+            reason=(
+                f"Projected worst-case PnL {projected_worst_case:.2f} "
+                f"breaches risk floor {min_worst_case_pnl:.2f}."
+            ),
+            projected_worst_case_pnl=projected_worst_case,
+            risk_floor=min_worst_case_pnl,
         )
-    return AcceptDecision(True, "OK")
+    return AcceptDecision(
+        accepted=True,
+        reason=(
+            f"Projected worst-case PnL {projected_worst_case:.2f} "
+            f"meets risk floor {min_worst_case_pnl:.2f}."
+        ),
+        projected_worst_case_pnl=projected_worst_case,
+        risk_floor=min_worst_case_pnl,
+    )
