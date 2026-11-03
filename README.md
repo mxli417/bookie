@@ -18,6 +18,14 @@ service or financial product.
 The initial simulation uses a three-outcome 1X2 market (`HOME`, `DRAW`, `AWAY`).
 The engine functions themselves stay deliberately small and deterministic.
 
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [Pricing, overround and bookmaker risk](docs/pricing-and-risk.md) — a
+  German-language explanation of the mathematics, the engine flow and why a
+  bookmaker manages probability distributions rather than predicting the next
+  outcome with certainty
+
 ## Architecture
 
 ```text
@@ -31,8 +39,10 @@ src/bookie/
   sim/
     runner.py       # deterministic toy market simulation
   career.py         # two-outcome adapter for the career demo
+  dashboard.py      # Plotly figures for pricing and risk
   web.py            # local Streamlit UI
   main.py           # console entry point
+docs/               # concept and model documentation
 tests/              # unit tests for pricing, risk, acceptance and settlement
 ```
 
