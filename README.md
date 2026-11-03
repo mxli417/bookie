@@ -30,6 +30,8 @@ src/bookie/
     settlement.py   # realized bookmaker PnL
   sim/
     runner.py       # deterministic toy market simulation
+  career.py         # two-outcome adapter for the career demo
+  web.py            # local Streamlit UI
   main.py           # console entry point
 tests/              # unit tests for pricing, risk, acceptance and settlement
 ```
@@ -70,6 +72,21 @@ Run all commands through the repository environment:
 
 The dependency lock is stored in `uv.lock`. Regenerate it with `uv lock` only
 after intentionally changing a dependency.
+
+## Local frontend
+
+The optional Streamlit UI provides a private two-outcome market for a fictional
+career decision: remain at the current company or leave it. It accepts bets in
+play points, enforces the engine's risk floor, simulates an outcome from the
+configured probability and shows both bookmaker and player settlement.
+
+```powershell
+.\.venv\Scripts\streamlit.exe run src\bookie\web.py
+```
+
+Changing market parameters affects only new quotes; every accepted bet keeps
+its locked odds. Reset the market after settlement to start another round.
+There is no persistence, authentication, payment or real-money functionality.
 
 ## Library example
 
