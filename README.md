@@ -78,7 +78,11 @@ after intentionally changing a dependency.
 The optional Streamlit UI provides a private two-outcome market for a fictional
 career decision: remain at the current company or leave it. It accepts bets in
 play points, enforces the engine's risk floor, simulates an outcome from the
-configured probability and shows both bookmaker and player settlement.
+configured probability and shows both bookmaker and player settlement. Its
+live book view also updates total accepted stakes, probability-weighted
+expected Bookie PnL, expected return, worst-case PnL and both outcome scenarios
+after every accepted bet. Points are fictional accounting units, not money or
+an enforced wallet balance.
 
 ```powershell
 .\.venv\Scripts\streamlit.exe run src\bookie\web.py

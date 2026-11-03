@@ -10,6 +10,7 @@ from bookie.career import (
     career_odds,
     career_probabilities,
     settlement_rows,
+    summarize_book,
 )
 from bookie.engine.accept import check_bet
 from bookie.engine.risk import RiskBook
@@ -48,6 +49,16 @@ def main() -> None:
         "Privates Prognose-Experiment: Verbleib oder Wechsel — ausschließlich "
         "mit fiktiven Punkten."
     )
+    with st.expander("Was bedeuten die Punkte?", expanded=True):
+        st.markdown(
+            "**Ein Punkt ist eine frei gewählte Recheneinheit, kein Euro und "
+            "kein Kontoguthaben.** Du kannst zum Beispiel 100 Punkte gedanklich "
+            "als dein Testbudget behandeln; die App erzwingt dieses Budget aber "
+            "nicht. Der Einsatz ist die riskierte Menge. Eine Auszahlung enthält "
+            "bei einer gewonnenen Wette Einsatz plus Gewinn. PnL bezeichnet nur "
+            "den Nettogewinn oder -verlust — Spieler- und Bookie-PnL sind daher "
+            "exakt gegensätzlich."
+        )
 
     with st.sidebar:
         st.header("Marktparameter")
@@ -104,6 +115,10 @@ def main() -> None:
             max_value=10_000.0,
             value=25.0,
             step=5.0,
+            help=(
+                "Fiktive Recheneinheiten, die du auf dieses Outcome setzt. "
+                "Es gibt kein echtes Guthaben und keine Zahlung."
+            ),
         )
         submitted = st.form_submit_button(
             "Wette anfragen",
@@ -130,12 +145,45 @@ def main() -> None:
         else:
             st.error(f"Wette abgelehnt: {decision.reason}")
 
-    st.subheader("Bookie-Risiko")
+    st.subheader("Live-Bookie-Bilanz")
     pnl = st.session_state.book.worst_case_pnl()
-    risk_columns = st.columns(3)
-    risk_columns[0].metric("Angenommene Wetten", len(st.session_state.bets))
-    risk_columns[1].metric("PnL bei Verbleib", _money(pnl[Outcome.HOME]))
-    risk_columns[2].metric("PnL bei Wechsel", _money(pnl[Outcome.AWAY]))
+    summary = summarize_book(
+        st.session_state.book, st.session_state.bets, probabilities
+    )
+    st.caption(
+        "Wird nach jeder angenommenen Wette aktualisiert. Der erwartete PnL "
+        "gewichtet beide möglichen Bookie-Ergebnisse mit den links eingestellten "
+        "fairen Wahrscheinlichkeiten."
+    )
+    summary_columns = st.columns(4)
+    summary_columns[0].metric("Angenommene Wetten", summary.bet_count)
+    summary_columns[1].metric("Einsatzvolumen", _money(summary.total_stakes))
+    summary_columns[2].metric(
+        "Erwarteter Bookie-PnL",
+        _money(summary.expected_pnl),
+        delta=(
+            f"{summary.expected_roi:.1%} vom Einsatzvolumen"
+            if summary.total_stakes
+            else None
+        ),
+    )
+    summary_columns[3].metric("Worst-Case-PnL", _money(summary.worst_case_pnl))
+
+    st.markdown("**Bookie-PnL je möglichem Outcome**")
+    outcome_columns = st.columns(2)
+    outcome_columns[0].metric("Bei Verbleib", _money(pnl[Outcome.HOME]))
+    outcome_columns[1].metric("Bei Wechsel", _money(pnl[Outcome.AWAY]))
+    st.dataframe(
+        [
+            {
+                "Outcome": CAREER_LABELS[outcome],
+                "Bookie-PnL": pnl[outcome],
+            }
+            for outcome in CAREER_OUTCOMES
+        ],
+        width="stretch",
+        hide_index=True,
+    )
 
     if st.session_state.bets:
         st.dataframe(

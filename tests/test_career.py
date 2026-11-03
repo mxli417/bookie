@@ -1,6 +1,12 @@
 import pytest
 
-from bookie.career import career_odds, career_probabilities, settlement_rows
+from bookie.career import (
+    career_odds,
+    career_probabilities,
+    settlement_rows,
+    summarize_book,
+)
+from bookie.engine.risk import RiskBook
 from bookie.engine.types import Bet, Outcome
 
 
@@ -21,6 +27,33 @@ def test_career_odds_include_configured_overround():
     odds = career_odds(stay_probability=0.6, margin=0.05)
 
     assert sum(1.0 / value for value in odds.values()) == pytest.approx(1.05)
+
+
+def test_summarize_book_updates_expected_and_worst_case_pnl():
+    probabilities = career_probabilities(0.6)
+    odds = career_odds(stay_probability=0.6, margin=0.05)
+    bet = Bet("B1", "career", Outcome.HOME, 25.0, odds[Outcome.HOME])
+    book = RiskBook.empty([Outcome.HOME, Outcome.AWAY])
+    book.add_bet(bet)
+
+    summary = summarize_book(book, [bet], probabilities)
+
+    assert summary.bet_count == 1
+    assert summary.total_stakes == pytest.approx(25.0)
+    assert summary.expected_pnl == pytest.approx(1.19047619)
+    assert summary.expected_roi == pytest.approx(0.04761905)
+    assert summary.worst_case_pnl == pytest.approx(-14.68253968)
+
+
+def test_summarize_empty_book_is_zero():
+    book = RiskBook.empty([Outcome.HOME, Outcome.AWAY])
+
+    summary = summarize_book(book, [], career_probabilities(0.6))
+
+    assert summary.total_stakes == 0.0
+    assert summary.expected_pnl == 0.0
+    assert summary.expected_roi == 0.0
+    assert summary.worst_case_pnl == 0.0
 
 
 def test_settlement_rows_show_player_and_bookie_as_opposites():
