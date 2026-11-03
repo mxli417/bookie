@@ -140,6 +140,35 @@ def main() -> None:
             delta=f"Fair {fair_odds:.2f}",
             delta_color="off",
         )
+    with st.expander("How probability becomes bookmaker odds", expanded=True):
+        st.markdown(
+            "**1. Fair probability → fair odds:** `fair odds = 1 / probability`  "
+            "\n**2. Add the margin:** `bookmaker probability = fair probability "
+            "× (1 + margin)`  "
+            "\n**3. Convert back to odds:** `bookmaker odds = 1 / bookmaker "
+            "probability`"
+        )
+        pricing_rows = []
+        for outcome in CAREER_OUTCOMES:
+            fair_probability = probabilities[outcome]
+            bookmaker_probability = 1.0 / odds[outcome]
+            pricing_rows.append(
+                {
+                    "Outcome": CAREER_LABELS[outcome],
+                    "Fair probability": f"{fair_probability:.1%}",
+                    "Fair odds": f"{1.0 / fair_probability:.2f}",
+                    "Bookmaker probability": f"{bookmaker_probability:.1%}",
+                    "Offered odds": f"{odds[outcome]:.2f}",
+                }
+            )
+        st.dataframe(pricing_rows, hide_index=True, width="stretch")
+        overround = sum(1.0 / offered_odds for offered_odds in odds.values())
+        st.caption(
+            f"Current overround: {overround:.1%}. The probabilities add up to "
+            f"more than 100% because the {margin:.1%} margin is distributed "
+            "proportionally across both outcomes. This lowers the offered odds "
+            "relative to fair odds."
+        )
     st.plotly_chart(
         pricing_figure(probabilities, odds),
         width="stretch",

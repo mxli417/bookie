@@ -17,6 +17,10 @@ def _number_input(app: AppTest, label: str):
     return next(widget for widget in app.number_input if widget.label == label)
 
 
+def _slider(app: AppTest, label: str):
+    return next(widget for widget in app.slider if widget.label == label)
+
+
 def test_streamlit_happy_path_accepts_and_settles_bet():
     app = AppTest.from_file(WEB_APP).run(timeout=10)
 
@@ -24,6 +28,13 @@ def test_streamlit_happy_path_accepts_and_settles_bet():
     assert app.title[0].value == "Career Market Lab"
     assert _metric_value(app, "Accepted bets") == "0"
     assert _metric_value(app, "Stake volume") == "0.00 points"
+    assert any(
+        expander.label == "How probability becomes bookmaker odds"
+        for expander in app.expander
+    )
+    assert any(
+        caption.value.startswith("Current overround: 105.0%") for caption in app.caption
+    )
 
     _button(app, "Submit bet request").click().run(timeout=10)
 
@@ -47,6 +58,17 @@ def test_streamlit_happy_path_accepts_and_settles_bet():
     assert "Player payout" in metric_labels
     assert any(
         message.value == "BOOKMAKER PROFIT: +25.00 points" for message in app.success
+    )
+
+
+def test_streamlit_pricing_explanation_tracks_margin():
+    app = AppTest.from_file(WEB_APP).run(timeout=10)
+
+    _slider(app, "Bookmaker margin").set_value(8.0).run(timeout=10)
+
+    assert not app.exception
+    assert any(
+        caption.value.startswith("Current overround: 108.0%") for caption in app.caption
     )
 
 
