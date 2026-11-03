@@ -1,5 +1,6 @@
 """Small domain adapter for the two-outcome career demo market."""
 
+import random
 from dataclasses import dataclass
 
 from bookie.engine.pricing import apply_margin, probs_to_odds
@@ -12,6 +13,7 @@ CAREER_LABELS = {
     Outcome.HOME: "Verbleib in der Firma",
     Outcome.AWAY: "Wechsel aus der Firma",
 }
+CAREER_MARKET_ID = "career-stay-or-leave"
 
 
 @dataclass(frozen=True)
@@ -41,6 +43,29 @@ def career_odds(stay_probability: float, margin: float) -> dict[Outcome, float]:
         raise ValueError("margin must be between 0 and 0.10")
     fair = career_probabilities(stay_probability)
     return probs_to_odds(apply_margin(fair, margin))
+
+
+def simulate_bet_request(
+    request_number: int,
+    probabilities: dict[Outcome, float],
+    odds: dict[Outcome, float],
+    seed: int,
+) -> Bet:
+    """Create one deterministic simulated bet request for the live dashboard."""
+    if request_number < 1:
+        raise ValueError("request_number must be positive")
+    rng = random.Random(seed + request_number)
+    outcome = (
+        Outcome.HOME if rng.random() < probabilities[Outcome.HOME] else Outcome.AWAY
+    )
+    stake = float(rng.choice([5, 10, 25, 50]))
+    return Bet(
+        bet_id=f"S{request_number:03d}",
+        market_id=CAREER_MARKET_ID,
+        outcome=outcome,
+        stake=stake,
+        odds=odds[outcome],
+    )
 
 
 def summarize_book(

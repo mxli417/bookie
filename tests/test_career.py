@@ -4,6 +4,7 @@ from bookie.career import (
     career_odds,
     career_probabilities,
     settlement_rows,
+    simulate_bet_request,
     summarize_book,
 )
 from bookie.engine.risk import RiskBook
@@ -27,6 +28,27 @@ def test_career_odds_include_configured_overround():
     odds = career_odds(stay_probability=0.6, margin=0.05)
 
     assert sum(1.0 / value for value in odds.values()) == pytest.approx(1.05)
+
+
+def test_simulated_bet_request_is_deterministic():
+    probabilities = career_probabilities(0.6)
+    odds = career_odds(0.6, 0.05)
+
+    first = simulate_bet_request(1, probabilities, odds, seed=42)
+    repeated = simulate_bet_request(1, probabilities, odds, seed=42)
+
+    assert first == repeated
+    assert first.bet_id == "S001"
+    assert first.outcome == Outcome.HOME
+    assert first.stake in {5.0, 10.0, 25.0, 50.0}
+
+
+def test_simulated_bet_request_requires_positive_sequence():
+    probabilities = career_probabilities(0.6)
+    odds = career_odds(0.6, 0.05)
+
+    with pytest.raises(ValueError):
+        simulate_bet_request(0, probabilities, odds, seed=42)
 
 
 def test_summarize_book_updates_expected_and_worst_case_pnl():

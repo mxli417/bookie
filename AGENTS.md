@@ -19,6 +19,7 @@ gambling service.
 - `src/bookie/engine` is the framework-independent domain core.
 - UI and simulations may import the engine; the engine must not import them.
 - `src/bookie/web.py` is a thin Streamlit UI; keep business rules out of it.
+- `src/bookie/dashboard.py` owns Plotly presentation figures and no risk rules.
 - Accepted odds are immutable and stored on each `Bet`.
 - `RiskBook.worst_case_pnl()` is the source of truth for scenario exposure.
 - `check_bet()` is a non-mutating preview. Callers explicitly add accepted bets.

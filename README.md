@@ -84,6 +84,19 @@ expected Bookie PnL, expected return, worst-case PnL and both outcome scenarios
 after every accepted bet. Points are fictional accounting units, not money or
 an enforced wallet balance.
 
+The trading-style dashboard uses Plotly to synchronize:
+
+- offered odds against fair odds
+- net liability by outcome
+- outcome-conditioned PnL against the configured risk floor
+- accepted-stake exposure distribution
+- an acceptance/rejection feed for manual and deterministic simulated requests
+
+The simulated order-flow button generates one reproducible request at a time;
+every decision immediately updates the book, metrics and charts. Streamlit is
+the canonical stateful demo. A static GitHub Pages preview would be a separate
+read-only presentation and is intentionally not part of the engine runtime.
+
 ```powershell
 .\.venv\Scripts\streamlit.exe run src\bookie\web.py
 ```
