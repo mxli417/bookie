@@ -134,3 +134,14 @@ if decision.accepted:
 This repository is for educational and private research purposes only. It is
 not a betting platform, gambling service or financial product. Do not use it
 to take real-money bets.
+
+## License
+
+This project is licensed under the
+[PolyForm Noncommercial License 1.0.0](LICENSE.md). Private study, research,
+experimentation, modification and redistribution are permitted for
+noncommercial purposes. Commercial use requires separate permission from the
+copyright holder.
+
+Because the license restricts commercial use, this project is source-available
+but is not Open Source under the OSI definition.
