@@ -1,14 +1,17 @@
 """
-    Mini simulation of a random match with a bet market on each outcome. 
-    Simulates a run with some gamblers on an arbitrary match and tests the
-    functionality of the mini-bookie engine against that.
+Mini simulation of a random match with a bet market on each outcome.
+Simulates a run with some gamblers on an arbitrary match and tests the
+functionality of the mini-bookie engine against that.
 """
+
 import random
-from bookie.engine.types import Market, Outcome, Bet
+
+from bookie.engine.accept import check_bet
 from bookie.engine.pricing import apply_margin, probs_to_odds
 from bookie.engine.risk import RiskBook
-from bookie.engine.accept import check_bet
 from bookie.engine.settlement import settle
+from bookie.engine.types import Bet, Market, Outcome
+
 
 def sample_result(fair_probs):
     r = random.random()
@@ -19,7 +22,10 @@ def sample_result(fair_probs):
             return o
     return list(fair_probs.keys())[-1]
 
-def simple_sim(random_seed: int = 1492, bookie_margin: float = 0.06, worst_case_pnl: float = -200.0):
+
+def simple_sim(
+    random_seed: int = 1492, bookie_margin: float = 0.06, worst_case_pnl: float = -200.0
+):
     random.seed(random_seed)
     market = Market("M1", [Outcome.HOME, Outcome.DRAW, Outcome.AWAY])
 
@@ -30,7 +36,7 @@ def simple_sim(random_seed: int = 1492, bookie_margin: float = 0.06, worst_case_
     margin = bookie_margin
     implied = apply_margin(fair, margin)
     odds = probs_to_odds(implied)
-    print("Odds:", odds, "Overround:", sum(1.0/o for o in odds.values()))
+    print("Odds:", odds, "Overround:", sum(1.0 / o for o in odds.values()))
 
     book = RiskBook.empty(market.outcomes)
     bets = []
@@ -45,11 +51,11 @@ def simple_sim(random_seed: int = 1492, bookie_margin: float = 0.06, worst_case_
         # bettor stakes are fixed and arbitrary
         stake = random.choice([5, 10, 20])
         b = Bet(
-            bet_id=f"B{i}", 
-            market_id=market.market_id, 
-            outcome=outcome, 
-            stake=stake, 
-            odds=odds[outcome]
+            bet_id=f"B{i}",
+            market_id=market.market_id,
+            outcome=outcome,
+            stake=stake,
+            odds=odds[outcome],
         )
 
         # if engine accepts bet, add it to the book

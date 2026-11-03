@@ -1,110 +1,115 @@
-# Bookie — a tiny bookmaker risk & pricing engine (mini-research project)
+# Bookie — a tiny bookmaker risk & pricing engine
 
-**Bookie** is a small, research-oriented bookmaker engine built to study:
+Bookie is a small research project for studying fixed-odds pricing, exposure,
+liability and risk limits. It is an educational simulation, not a gambling
+service or financial product.
 
-* bookmaker odds, bets and risk handling
-* probabilistic pricing (probabilities -> odds -> margin)
-* exposure & liability tracking
-* worst-case Profit-and-Loss (PnL) calculation and acceptance rules
+## Implemented
 
-It is not a gambling product — it is a **toy research engine** to explore how 
-bookmakers combine probability models and risk constraints to avoid insolvency 
-under uncertainty.
+- fixed-odds markets using explicit outcomes
+- fair probabilities to implied probabilities and decimal odds
+- configurable bookmaker margin (overround)
+- stake and liability tracking per outcome
+- outcome-conditioned and worst-case bookmaker PnL
+- acceptance decisions based on a minimum worst-case PnL
+- settlement with total and per-bet bookmaker PnL
+- deterministic toy simulation from a random seed
 
-## Motivation
+The initial simulation uses a three-outcome 1X2 market (`HOME`, `DRAW`, `AWAY`).
+The engine functions themselves stay deliberately small and deterministic.
 
-I am a statistician by trade and fascinated by stochastic modeling in real-world systems — especially where randomness, incentives, and risk interact.
+## Architecture
 
-Inspired by early probability texts such as Huygens’ *De Ratiociniis in Ludo Aleae* (1657) and de Moivre’s *The Doctrine of Chances* (1718/1756), this project uses simulated betting markets as a didactic platform for exploring modern risk and pricing structures in stochastic environments.
-
-* how odds encode implied probabilities
-* how margins generate positive expected value for the bookmaker
-* why **risk management — not prediction — prevents ruin**
-
-The engine is deliberately small, transparent, and mathematically explicit.
-
-## What this engine does
-
-This project implements a minimal **fixed-odds pre-match bookmaker core**:
-
-1. **Pricing**: Convert fair probabilities into odds with overround (margin)
-
-2. **Risk Tracking**: Track stakes & liability per outcome
-
-3. **Worst-Case PnL**: Compute outcome-conditioned cashflow
-
-4. **Bet Acceptance Policy**: Accept / reject bets based on risk limits
-
-5. **Settlement**: Resolve bets and compute realized PnL
-
-A small simulation harness demonstrates how:
-
-* margins ≠ guaranteed safety
-* a few extreme outcomes dominate risk
-* acceptance limits stabilize worst-case exposure
-
-
-## Project structure
-
-```
-bookie/
+```text
+src/bookie/
   engine/
-    types.py        # Market, Bet, Outcome, Price
-    pricing.py      # probs → implied probs → odds (with margin)
-    risk.py         # stakes, liability, worst-case PnL - bookie core
-    accept.py       # accept / reject logic
-    settlement.py   # resolve bets & compute PnL
+    types.py        # Market, Bet, Outcome and Price data types
+    pricing.py      # probabilities -> overround -> decimal odds
+    risk.py         # stakes, liability and scenario PnL
+    accept.py       # hypothetical risk check before accepting a bet
+    settlement.py   # realized bookmaker PnL
   sim/
-    runner.py      # toy simulation of bettors & outcomes
-  tests/
-    test_pricing.py
-    test_risk.py
+    runner.py       # deterministic toy market simulation
+  main.py           # console entry point
+tests/              # unit tests for pricing, risk, acceptance and settlement
 ```
 
-Design principles:
+The dependency direction is `UI/simulation -> engine`. The engine has no UI,
+database or framework dependency. A bet stores its accepted odds so later
+price changes cannot alter its settlement.
 
-* pure & deterministic core functions
-* explicit data structures
-* easy to test, reason about, and later port to Rust/C++ (optional extension)
+For an outcome `i`, the bookmaker scenario PnL is:
 
+```text
+PnL(i) = stakes on all losing outcomes - liability on outcome i
+```
 
-## Why this project exists
+The acceptance policy copies the current risk book, adds the candidate bet to
+that copy and rejects it when the resulting minimum scenario PnL is below the
+configured risk floor. The caller adds an accepted bet to the real book.
 
-This engine is a **tiny research laboratory** for questions like:
+## Setup
 
-* How does margin translate into expected profit?
-* Why can a bookmaker still go bankrupt?
-* How do stake limits cap Pareto-style tail risk?
-* What happens to ruin probability under different policies?
+The project uses Python 3.14 and [uv](https://docs.astral.sh/uv/). From the
+repository root on Windows:
 
-The project sits at the intersection of:
+```powershell
+py -3.14 -m venv .venv
+$env:UV_CACHE_DIR = "$PWD\.uv-cache"
+uv sync --extra dev
+```
 
-* applied probability
-* stochastic processes
-* actuarial risk theory
-* simulation & systems modeling
+Run all commands through the repository environment:
 
+```powershell
+.\.venv\Scripts\bookie.exe
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\ruff.exe check .
+.\.venv\Scripts\black.exe --check src tests
+```
 
-## Current potential roadmap (evolved as time allows)
+The dependency lock is stored in `uv.lock`. Regenerate it with `uv lock` only
+after intentionally changing a dependency.
 
-* Monte-Carlo ruin simulations with policy comparisons
-* extend calculations to: Rust / C++ core via `pyo3` / `pybind11`
-* extend the engine to handle multi-outcome bets
-* dynamics: exposure-aware requoting
-* optional: Poisson & xG-based pricing models
-* optional: correlated outcomes & combo bets
+## Library example
 
-## Disclaimer
+```python
+from bookie.engine.accept import check_bet
+from bookie.engine.risk import RiskBook
+from bookie.engine.types import Bet, Outcome
 
-This project is for **educational and private research purposes only**.
-It is not a betting platform, gambling service, or financial product.
+book = RiskBook.empty([Outcome.HOME, Outcome.AWAY])
+bet = Bet("B1", "career", Outcome.HOME, stake=10.0, odds=1.9)
+decision = check_bet(book, bet, min_worst_case_pnl=-100.0)
+if decision.accepted:
+    book.add_bet(bet)
+```
 
-The goal is to study **risk, incentives, and stochastic structure** — the same spirit in which early probability theory was developed.
+## Current limitations
+
+- in-memory state only
+- one market at a time in the toy simulation
+- no capital account or multi-market ruin process
+- no authentication, payments or real-money handling
+- fixed exogenous fair probabilities
+- no correlated outcomes or combination bets
+
+## Roadmap
+
+- Monte-Carlo ruin simulations with policy comparisons
+- extend calculations to a Rust/C++ core via `pyo3` / `pybind11`
+- extend the engine to handle additional market types
+- exposure-aware requoting
+- optional Poisson and xG-based pricing models
+- optional correlated outcomes and combination bets
 
 ## References
 
-- Huygens, C. (1657). De ratiociniis in ludo aleae [On reasoning in games of chance] (C. Doyle, Trans.). Dartmouth College Mathematics Department.
-Retrieved from: https://math.dartmouth.edu/~doyle/docs/huygens/huygens.pdf
+- Huygens, C. (1657), *De ratiociniis in ludo aleae*
+- de Moivre, A. (1718/1756), *The Doctrine of Chances*
 
-- de Moivre, A. (1718/1756). The Doctrine of Chances: or, A Method of Calculating the Probability of Events in Play (Reprint ed.). London: J. Tonson.
-Retrieved from: https://archive.org/details/doctrineofchance00moiv
+## Disclaimer
+
+This repository is for educational and private research purposes only. It is
+not a betting platform, gambling service or financial product. Do not use it
+to take real-money bets.

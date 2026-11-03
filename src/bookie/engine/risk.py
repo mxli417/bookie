@@ -1,23 +1,25 @@
 """
-    Bookmaker miniaturized book risk calculation. For the three allowed
-    outcomes here (home wins, away wins, the match is a draw) we track 
-    the stakes (bet amount set forth by gamblers) and the liabilities 
-    (stake * odds of the outcome minus the initial stake) to have an 
-    overview on how much money could be lost by the bookie. Worst case
-    PnL (Profit and Loss) tracks the outcomes for all three elementary 
-    events, calculating the profit or losses on each bet outcome. 
-    Bookie profit is equal to the sum of stakes of the loosing outcomes
-    minus the liability on the winning outcome.
+Bookmaker miniaturized book risk calculation. For the three allowed
+outcomes here (home wins, away wins, the match is a draw) we track
+the stakes (bet amount set forth by gamblers) and the liabilities
+(stake * odds of the outcome minus the initial stake) to have an
+overview on how much money could be lost by the bookie. Worst case
+PnL (Profit and Loss) tracks the outcomes for all three elementary
+events, calculating the profit or losses on each bet outcome.
+Bookie profit is equal to the sum of stakes of the loosing outcomes
+minus the liability on the winning outcome.
 """
 
 from dataclasses import dataclass
 from typing import Dict
-from bookie.engine.types import Outcome, Bet
+
+from bookie.engine.types import Bet, Outcome
+
 
 @dataclass
 class RiskBook:
     # total stakes per outcome and total liabilities
-    stakes: Dict[Outcome, float]  
+    stakes: Dict[Outcome, float]
     liability: Dict[Outcome, float]
 
     @staticmethod

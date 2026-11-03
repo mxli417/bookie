@@ -1,9 +1,12 @@
-""" 
-    Simple "pricing" engine constructing odds with overround margins 
-    (bookmaker margin odds).
 """
+Simple "pricing" engine constructing odds with overround margins
+(bookmaker margin odds).
+"""
+
 from typing import Dict
+
 from bookie.engine.types import Outcome
+
 
 def apply_margin(probs: Dict[Outcome, float], margin: float) -> Dict[Outcome, float]:
     """
@@ -18,7 +21,10 @@ def apply_margin(probs: Dict[Outcome, float], margin: float) -> Dict[Outcome, fl
     # scale to overround
     return {k: v * (1.0 + margin) for k, v in norm.items()}
 
-def probs_to_odds(implied_probs: Dict[Outcome, float], min_odds: float = 1.01) -> Dict[Outcome, float]:
+
+def probs_to_odds(
+    implied_probs: Dict[Outcome, float], min_odds: float = 1.01
+) -> Dict[Outcome, float]:
     odds = {}
     for k, p in implied_probs.items():
         if p <= 0:

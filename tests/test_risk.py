@@ -1,7 +1,7 @@
 import pytest
 
-from bookie.engine.types import Outcome, Bet
 from bookie.engine.risk import RiskBook
+from bookie.engine.types import Bet, Outcome
 
 
 def test_riskbook_empty_initializes_zero_state():
