@@ -15,6 +15,7 @@ venv/
 .pytest_cache/
 .pre-commit-cache/
 .ruff_cache/
+docs/_build/
 .mypy_cache/
 .coverage
 .coverage.*

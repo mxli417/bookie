@@ -21,6 +21,10 @@ The engine functions themselves stay deliberately small and deterministic.
 ## Documentation
 
 - [Documentation index](docs/README.md)
+- [When can every outcome be profitable?](docs/book-balancing.md) — the short
+  derivation of the balanced-book condition
+- [Sources, evidence, and scope](docs/sources.md) — source hierarchy,
+  claim-by-claim scope, and academic references
 - [Pricing, overround and bookmaker risk](docs/pricing-and-risk.md) — the
   mathematics, engine flow, and an explanation of why a bookmaker manages
   probability distributions rather than predicting the next outcome with
@@ -78,6 +82,7 @@ Run all commands through the repository environment:
 .\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\ruff.exe check .
 .\.venv\Scripts\black.exe --check src tests
+.\.venv\Scripts\sphinx-build.exe -W -b html docs docs\_build\html
 ```
 
 The dependency lock is stored in `uv.lock`. Regenerate it with `uv lock` only

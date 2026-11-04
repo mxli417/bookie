@@ -4,3 +4,5 @@ isort~=7.0.0
 pytest~=9.0.2
 commitizen~=4.11.0
 pre-commit~=4.5.1
+sphinx>=8.2,<10
+myst-parser>=4,<5

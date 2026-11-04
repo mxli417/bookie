@@ -11,7 +11,7 @@ Bookie is not a prediction oracle. It models a small fixed-odds bookmaker:
 5. Accept a new bet only if it does not breach the configured risk floor.
 6. Settle the book deterministically after an actual or simulated result.
 
-```mermaid
+```text
 flowchart LR
     P[Fair probabilities] --> M[Apply overround]
     M --> O[Offered decimal odds]
@@ -66,7 +66,9 @@ $$
 $$
 
 With \(m=5\%\), the overround is \(105\%\). Offered odds are therefore lower
-than fair odds.
+than fair odds. This reciprocal-odds definition is standard; importantly,
+there are several possible methods for allocating or removing an overround,
+and Bookie deliberately implements proportional normalization.[^clarke]
 
 ### Example: stay or leave
 
@@ -124,6 +126,11 @@ This calculation assumes that:
 - rounding and minimum-odds effects do not apply;
 - correlated or dependent markets are not combined.
 
+These assumptions are substantive. Hegarty and Whelan show that the usual
+overround-based expected-payout formula is exact under equal expected returns
+across the available bets, but may misstate average losses when margins vary
+systematically by outcome.[^hegarty]
+
 The **realized** profit on one market may be strongly positive or negative.
 Expected value describes many comparable repetitions, not the next individual
 outcome.
@@ -135,6 +142,12 @@ The central idea is:
 > The bookmaker does not need to know which outcome will happen next. It needs
 > to price the distribution well enough and ensure that it can financially
 > survive every possible outcome.
+
+The German Wikipedia overview gives the basic version of this argument and
+describes fixed odds, stake limits, and balancing across outcomes.[^wiki] The
+scenario equations, risk-floor policy, and acceptance semantics below go
+beyond that overview and are definitions of this project. See
+[Sources, evidence, and scope](sources.md) for an explicit claim map.
 
 This model uses four separate mechanisms to achieve that goal.
 
@@ -219,6 +232,14 @@ $$
 
 The book is not profitable in every outcome, but expected PnL is positive and
 the possible loss remains inside the selected limit.
+
+A fully balanced book can instead produce positive PnL in every outcome; the
+exact condition and construction are derived in
+[When can every outcome be profitable?](book-balancing.md). This is a possible
+state, not a claim that real bookmakers invariably balance each market.
+Levitt and Franck et al. describe the empirical alternatives, including taking
+outcome positions and shading prices in response to bettor demand.[^levitt]
+[^franck]
 
 ### Sequence dependence of the current policy
 
@@ -307,3 +328,30 @@ next outcome.
 The mathematical core remains independent of Streamlit and Plotly. The UI
 reads and visualizes engine state; it does not define separate pricing or risk
 rules.
+
+## 11. References
+
+[^wiki]: Wikipedia contributors, “Buchmacher,” *German Wikipedia*, revision of
+    17 May 2026, <https://de.wikipedia.org/wiki/Buchmacher>. Accessed 4
+    November 2026. Used for baseline orientation; the article is itself
+    flagged as lacking citations.
+
+[^clarke]: Stephen Clarke, Stephanie Kovalchik, and Martin Ingram, “Adjusting
+    Bookmaker's Odds to Allow for Overround,” *American Journal of Sports
+    Science* 5(6), 2017, pp. 45–49,
+    <https://doi.org/10.11648/j.ajss.20170506.12>.
+
+[^hegarty]: Tadgh Hegarty and Karl Whelan, “Estimating Expected Loss Rates in
+    Betting Markets: Theory and Evidence,” *Applied Economics* 58(28), 2026,
+    pp. 5509–5523,
+    <https://doi.org/10.1080/00036846.2025.2507979>.
+
+[^levitt]: Steven D. Levitt, “Why Are Gambling Markets Organised So
+    Differently from Financial Markets?,” *The Economic Journal* 114(495),
+    2004, pp. 223–246,
+    <https://doi.org/10.1111/j.1468-0297.2004.00207.x>.
+
+[^franck]: Egon Franck, Erwin Verbeek, and Stephan Nüesch, “Prediction Accuracy
+    of Different Market Structures—Bookmakers versus a Betting Exchange,”
+    *International Journal of Forecasting* 26(3), 2010, pp. 448–459,
+    <https://doi.org/10.1016/j.ijforecast.2010.01.004>.
